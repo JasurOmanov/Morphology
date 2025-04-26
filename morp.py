@@ -1,4 +1,5 @@
 import streamlit as st
+import spacy
 
 # 1. Leksik baza (hozircha bo'sh, lemmalar bazasi bo'lmasligi mumkin)
 lemmalar = {}  # Bu bo'sh, lekin siz kelajakda to'ldirishingiz mumkin
@@ -13,36 +14,40 @@ suffixes = [
     {"suffix": "miz", "feats": {"Person": "1", "Number": "Plural"}, "pos": ["VERB", "NOUN"]},
 ]
 
+# 3. Spacy bilan lemmatizatsiya qilish va tahlil
+nlp = spacy.load("xx_ent_wiki_sm")
 
-# 3. Tahlil funksiyasi
+# 4. Tahlil funksiyasi
 def analyze(word):
-    # 3.1 Agar lemmalar bazasidan topilsa
-    if word in lemmalar:
+    # Spacy yordamida so'zni tahlil qilish
+    doc = nlp(word)
+    for token in doc:
+        lemma = token.lemma_  # Spacy lemmatizatsiya qilish
+        pos = token.pos_  # So'z turini olish
+        feats = None
+
+        # Qo‘shimchalarni ajratib, qolgan qismini lemma deb olish
+        for suffix in suffixes:
+            if word.endswith(suffix["suffix"]):
+                base = word[:-len(suffix["suffix"])]
+                feats = suffix["feats"]
+                return {
+                    "word": word,
+                    "lemma": base,
+                    "pos": pos,
+                    "feats": feats
+                }
+
         return {
             "word": word,
-            "lemma": word,
-            "pos": lemmalar[word],
-            "feats": None
+            "lemma": lemma,
+            "pos": pos,
+            "feats": feats
         }
-
-    # 3.2 Agar lemmalar bazasidan topilmasa, qo‘shimchalarni ajratib, qolgan qismini lemma deb olish
-    for suffix in suffixes:
-        if word.endswith(suffix["suffix"]):
-            # Qo‘shimchalarni ajratib olish
-            base = word[:-len(suffix["suffix"])]
-            pos = suffix["pos"][0]  # Default POS ning birinchi turini olish
-            feats = suffix["feats"]
-            return {
-                "word": word,
-                "lemma": base,
-                "pos": pos,
-                "feats": feats
-            }
 
     return {"word": word, "error": "No analysis found"}
 
-
-# 4. Streamlit interfeysi
+# 5. Streamlit interfeysi
 st.title("O'zbek Tili Morfologik Tahlilator")
 st.write("Bu dastur yordamida O'zbek tilidagi so'zlarni morfologik tahlil qilishingiz mumkin.")
 
